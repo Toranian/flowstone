@@ -5,13 +5,13 @@ FROM node:18
 WORKDIR /app
 
 # Copy package.json and package-lock.json files
-COPY package*.json ./
+COPY ./code/web/package*.json ./
 
 # Install dependencies with the legacy peer dependencies flag
 RUN npm install --legacy-peer-deps
 
 # Copy the rest of the project files
-COPY . .
+COPY ./code/web/ .
 
 # Build the Next.js app
 RUN npm run build
