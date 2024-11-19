@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const sockURL = process.env.NEXT_PUBLIC_SOCKET_URL || "ws://localhost:654321";
+// const sockURL = process.env.NEXT_PUBLIC_SOCKET_URL || "ws://localhost:654321";
+const sockURL = "ws://flowstone-production.up.railway.app/socket:654321";
 
 const WebSocketClient: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
