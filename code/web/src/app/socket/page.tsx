@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 
+const sockURL = process.env.NEXT_PUBLIC_SOCKET_URL || "ws://localhost:654321";
+
 const WebSocketClient: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
   const [input, setInput] = useState<string>("");
@@ -8,7 +10,7 @@ const WebSocketClient: React.FC = () => {
 
   useEffect(() => {
     // Initialize WebSocket connection
-    const ws = new WebSocket("ws://127.0.0.1:65432"); // WebSocket server address
+    const ws = new WebSocket(sockURL); // WebSocket server address
     setSocket(ws);
 
     ws.onopen = () => {
