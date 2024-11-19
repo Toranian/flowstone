@@ -29,8 +29,8 @@ services:
       dockerfile: Dockerfile.nextjs # Use the Next.js Dockerfile
     ports:
       - "3000:3000"
-    volumes:
-      - ./code/web/:/app
+    # volumes:
+    #   - ./code/web/:/app
 
   # websocket-server:
   #   build:
