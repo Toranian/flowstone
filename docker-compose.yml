@@ -1,17 +1,17 @@
-# version: "3.8"
-#
-# services:
-#   nextjs-app:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.nextjs
-#     ports:
-#       - "3000:3000"
-#     environment:
-#       - NODE_ENV=production
-#     volumes:
-#       - .:/app
-#       - /app/node_modules
+version: "3.8"
+
+services:
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+      - /app/node_modules
 #
 #   python:
 #     build:
@@ -21,24 +21,24 @@
 #       - "65432:65432"
 #     environment:
 #       - PORT=65432
-
-services:
-  nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile.nextjs # Use the Next.js Dockerfile
-    ports:
-      - "3000:3000"
-    # volumes:
-    #   - ./code/web/:/app
-
-  # websocket-server:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.python # Use the Python WebSocket Dockerfile
-  #   ports:
-  #     - "65432:65432"
-  #   environment:
-  #     - PORT=65432
-  #   volumes:
-  #     - ./code/relay/:/app
+#
+# services:
+#   nextjs:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.nextjs # Use the Next.js Dockerfile
+#     ports:
+#       - "3000:3000"
+#     # volumes:
+#     #   - ./code/web/:/app
+#
+#   # websocket-server:
+#   #   build:
+#   #     context: .
+#   #     dockerfile: Dockerfile.python # Use the Python WebSocket Dockerfile
+#   #   ports:
+#   #     - "65432:65432"
+#   #   environment:
+#   #     - PORT=65432
+#   #   volumes:
+#   #     - ./code/relay/:/app
