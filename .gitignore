@@ -42,3 +42,7 @@ next-env.d.ts
 
 # python environments
 venv
+
+__pycache__/
+code/relay/__pycache__/
+*.pyc
