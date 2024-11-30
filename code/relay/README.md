@@ -11,3 +11,7 @@ Use of different, isolated services for the following:
 3. Socket management
 
 Each service has a class, and those classes are used in a singleton instance called App. Using the App instance, everything can be managed easily.
+
+### Running
+
+Right now, run the connect.py function after installing the requirements from the `requirements.txt` file

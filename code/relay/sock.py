@@ -7,7 +7,8 @@ class WebSocketServer:
         # self.host = host
         # self.port = port
 
-        self.host = "ws://flowstone-production.up.railway.app/socket"
+        # self.host = "localhost"
+        self.host = host
         self.port = 65432
         self.connected_clients = set()
 
@@ -37,13 +38,25 @@ class WebSocketServer:
                 await asyncio.gather(
                     *(client.send(f"Current time: {current_time}") for client in self.connected_clients)
                 )
+                # asyncio.run_coroutine_threadsafe(self.send_countdown(10), asyncio.get_event_loop())
+
             await asyncio.sleep(5)  # Wait for 5 seconds before sending the next update
+
+    async def send_message(self, message="Default message"):
+        if self.connected_clients:
+                await asyncio.gather(
+                    *(client.send(f"Countdown: {length}") for client in self.connected_clients)
+                )
+
+
 
     async def start(self):
         print(f"Starting WebSocket server on {self.host}:{self.port}")
         async with websockets.serve(self.echo, self.host, self.port):
             # Run the server and the time sender concurrently
             await asyncio.gather(self.send_time())
+
+            await asyncio.gather(self.send_countdown())
 
 
 # Running the server
