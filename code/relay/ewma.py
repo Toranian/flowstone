@@ -38,6 +38,12 @@ class EWMA:
         """
         return self.actual, self.predicted
 
+    def focus_score(self):
+        """
+        Calculate the focus score based on the actual and predicted focus lengths
+        """
+        return sum(self.actual) / sum(self.predicted)
+
 if __name__ == '__main__':
     focus = EWMA()
 
