@@ -32,6 +32,12 @@ class EWMA:
 
         return self.current_length
 
+    def export(self):
+        """
+        Export the actual and predicted focus lengths
+        """
+        return self.actual, self.predicted
+
 if __name__ == '__main__':
     focus = EWMA()
 

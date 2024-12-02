@@ -1,96 +1,94 @@
+import tkinter as tk
+from tkinter import ttk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+from ewma import EWMA
 import serial
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import time
 from datetime import datetime
-from sock import WebSocketServer
 
-THRESHOLD = 2.5
-MAX_DISTANCE = 15
+# Constants
+THRESHOLD = 3
+GRACE_PERIOD = 20  # After placing the phone down, user has 20 seconds to pick it back up.
+SESSION_LENGTH = 10
 
+# EWMA setup
+ewma = EWMA()
+
+# Arduino setup
 arduino = serial.Serial(port='/dev/ttyACM0', baudrate=9600, timeout=1)
+time.sleep(1)  # Allow Arduino time to initialize
+
+# Global variables
 focusing = False
-distracted = False
-session_length = 10
-focus_start = datetime.now()
+distractions = 0
+focus_start = None
+session_length = ewma.adjust(SESSION_LENGTH)
+actual_data = []
+predicted_data = []
+
+# GUI setup
+root = tk.Tk()
+root.title("Focus Session Tracker")
+root.geometry("800x600")
+
+# Create frames
+frame_top = ttk.Frame(root, padding="10")
+frame_top.pack(fill=tk.X)
+
+frame_plot = ttk.Frame(root, padding="10")
+frame_plot.pack(fill=tk.BOTH, expand=True)
+
+# Create distraction label
+distraction_label = ttk.Label(frame_top, text=f"Distractions: {distractions}", font=("Arial", 16))
+distraction_label.pack(side=tk.LEFT, padx=10)
+
+# Create plot figure
+fig, ax = plt.subplots()
+line_actual, = ax.plot([], [], label="EWMA Actual", color="blue")
+line_predicted, = ax.plot([], [], label="EWMA Predicted", color="orange")
+ax.set_title("EWMA Actual vs Predicted")
+ax.set_xlabel("Time")
+ax.set_ylabel("Value")
+ax.legend()
+ax.grid(True)
+
+# Embed the plot in Tkinter
+canvas = FigureCanvasTkAgg(fig, master=frame_plot)
+canvas_widget = canvas.get_tk_widget()
+canvas_widget.pack(fill=tk.BOTH, expand=True)
 
 
-def send_rgb(r, g, b, intensity=1):
-    """Send RGB values to the Arduino."""
-    r = int(r * intensity)
-    g = int(g * intensity)
-    b = int(b * intensity)
-    if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
-        rgb_data = f"{r},{g},{b}\n"
-        arduino.write(rgb_data.encode())
-        print(f"Sent: {rgb_data.strip()}")
-    else:
-        print("Error: RGB values must be between 0 and 255.")
+def update_plot():
+    """Update the EWMA plot with the latest data."""
+    global actual_data, predicted_data
+
+    # Update plot data
+    line_actual.set_data(range(len(actual_data)), actual_data)
+    line_predicted.set_data(range(len(predicted_data)), predicted_data)
+
+    # Adjust axis limits dynamically
+    ax.set_xlim(0, max(len(actual_data), len(predicted_data)))
+    ax.set_ylim(0, max(max(actual_data, default=1), max(predicted_data, default=1)))
+
+    # Redraw canvas
+    canvas.draw()
 
 
-def clear_led():
-    """Turn off the LED."""
-    send_rgb(0, 0, 0)
+def monitor_arduino():
 
 
-def focus_monitor():
-    """Blocking function to monitor focus."""
-    global focusing, distracted, session_length, focus_start
-
-    try:
-        while True:
-            try:
-                line = arduino.readline().decode().strip()
-                distance = float(line)
-            except ValueError:
-                # Ignore invalid data
-                continue
-
-            if distance < THRESHOLD and not focusing:
-                focusing = True
-                print(f"Starting session for {session_length} seconds.")
-                send_rgb(0, 0, 255)
-                focus_start = datetime.now()
-
-            elif focusing and distance > MAX_DISTANCE:
-                print("Focus session ended prematurely.")
-                clear_led()
-                focusing = False
-
-            elif focusing and distance > THRESHOLD * 1.5 and distance < MAX_DISTANCE:
-                print("Distracted! Adjusting intensity.")
-                intensity = (distance / MAX_DISTANCE)
-                send_rgb(255, 0, 0, intensity)
-                distracted = True
-
-            elif focusing and distance < THRESHOLD and distracted:
-                send_rgb(0, 0, 255)
-                distracted = False
-
-    except Exception as e:
-        print(f"Error in focus_monitor: {e}")
-    finally:
-        arduino.close()
+def on_close():
+    """Handle program closing."""
+    arduino.close()
+    root.destroy()
 
 
-async def main():
-    server = WebSocketServer()
+# Start monitoring and updating
+monitor_arduino()
 
-    # Start the WebSocket server
-    server_task = asyncio.create_task(server.start())
+# Handle GUI close event
+root.protocol("WM_DELETE_WINDOW", on_close)
 
-    # Run the focus monitor in a separate thread
-    loop = asyncio.get_running_loop()
-    with ThreadPoolExecutor() as executor:
-        focus_monitor_task = loop.run_in_executor(executor, focus_monitor)
-
-        try:
-            # Keep both tasks running
-            await asyncio.gather(server_task, focus_monitor_task)
-        except asyncio.CancelledError:
-            print("Tasks cancelled. Exiting.")
-        finally:
-            arduino.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# Start the Tkinter event loop
+root.mainloop()

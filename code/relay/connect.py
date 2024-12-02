@@ -4,7 +4,7 @@ from ewma import EWMA
 from datetime import datetime
 
 THRESHOLD = 3
-MAX_DISTANCE = 6
+MAX_DISTANCE = 30
 GRACE_PERIOD = 20 # After placing the phone down, the user has 20 seconds to pick it back up. 
  
 
@@ -55,30 +55,49 @@ def blink_led(color):
         time.sleep(0.5)
         clear_led()
 
+
+def pulse_led(color):
+    r,g,b = color
+
+    for i in range(0,100, 5):
+        send_rgb(r, g, b, i/100)
+        time.sleep(0.005)
+
+    for i in range(100, 0, -5):
+        send_rgb(r, g, b, i/100)
+        time.sleep(0.005)
+
 distractions = 0
 # Example usage
 try:
+    clear_led()
+    print("Starting!")
     while True:
 
         current_time = time.time()
 
+        # Check if the session has ended
         if focus_start is not None and focusing:
             time_diff = datetime.now() - focus_start
             if time_diff.total_seconds() > session_length:
                 print("Focus session complete!")
-                blink_led((0, 0, 255))
-                clear_led()
 
                 focusing = False
                 focus_start = None
+                distracted = False
 
                 session_length = ewma.adjust(session_length)
+
+                # important to call these last!
+                pulse_led((255, 255, 255))
+                pulse_led((255, 255, 255))
+                clear_led()
 
 
         distance = float(arduino.readline().decode().strip())
 
+        # Start a focus session if the phone is placed down
         if distance < THRESHOLD and not focusing:
-            focusing = True
 
             if len(ewma.actual) == 0:
                 session_length = 10
@@ -87,10 +106,13 @@ try:
 
             print(f"Starting session for {session_length}")
 
-            send_rgb(0, 0, 255)
+            send_rgb(255, 255, 255)
 
             focus_start = datetime.now()
 
+            focusing = True
+
+        # Update the intensity of the LED
         if focusing and distance < THRESHOLD and current_time - decrease_time >= 1:
             time_diff = datetime.now() - focus_start
             print("time remaining: ", session_length - time_diff.total_seconds() // 1)
@@ -101,21 +123,20 @@ try:
             decrease_time = time.time()
 
         # Need to make sure this doesn't constantly trigger.
-        elif focusing and distance < THRESHOLD and distracted:
-            blink_led((255, 255, 255))
+        if focusing and distance < THRESHOLD and distracted:
             distracted = False
             distractions += 1
             print(f"Distraction detected! Total distractions: {distractions}")
 
         # The extra 1.5 factor is to help prevent false positives
-        elif focusing and distance > THRESHOLD:
-
+        if focusing and distance > 2.8:
 
             if not off_stand_time:
                 off_stand_time = time.time()
-                send_rgb(255, 0, 0)
+                send_rgb(255, 100, 0)
+                distracted = True
                 
-            if current_time - off_stand_time >= 3:
+            if current_time - off_stand_time >= 1:
                 print("You've moved your device, and your focus session is forfeit.")
                 focus_end = datetime.now()
                 duration = focus_end - focus_start
@@ -125,7 +146,8 @@ try:
                 print(f"Hours: {int(hours)}, Minutes: {int(minutes)}, Seconds: {duration.seconds % 60}")
 
                 # Blink the LEDs to indicate the session is over.
-                blink_led((255, 0, 0))
+                pulse_led((255, 0, 0))
+                pulse_led((255, 0, 0))
 
                 # End the focus session
                 focusing = False
@@ -133,9 +155,10 @@ try:
                 clear_led()
 
 
-            intensity = (distance / MAX_DISTANCE)
-            send_rgb(255, 0, 0, intensity)
-            distracted = True
+
+        else:
+            off_stand_time = None
+
 
 
 except KeyboardInterrupt:
